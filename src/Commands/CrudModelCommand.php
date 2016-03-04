@@ -14,8 +14,9 @@ class CrudModelCommand extends GeneratorCommand
     protected $signature = 'crud:model
                             {name : The name of the model.}
                             {--table= : The name of the table.}
-                            {--fillable= : The names of the fillable columns.}';
-
+                            {--fillable= : The names of the fillable columns.}
+    						{--associations= : Associations for this model. Format is field:type:model.}';
+    
     /**
      * The console command description.
      *
@@ -66,10 +67,12 @@ class CrudModelCommand extends GeneratorCommand
 
         $table = $this->option('table') ?: $this->argument('name');
         $fillable = $this->option('fillable');
-
+        $associations = $this->option('associations');
+        
         return $this->replaceNamespace($stub, $name)
             ->replaceTable($stub, $table)
             ->replaceFillable($stub, $fillable)
+            ->replaceAssociations($stub, $associations)
             ->replaceClass($stub, $name);
     }
 
@@ -107,4 +110,64 @@ class CrudModelCommand extends GeneratorCommand
         return $this;
     }
 
+    /**
+     * Replace the associations for the given stub.
+     *
+     * @param  string  $stub
+     * @param  string  $associations
+     *
+     * @return $this
+     */
+    protected function replaceAssociations(&$stub, $associations)
+    {
+    	$associationsCode = $this->getAssociationsCode($associations);
+
+    	$stub = str_replace(
+    			'{{associations}}', $associationsCode, $stub
+    			);
+    	
+    	return $this;
+    }
+
+
+    /**
+     * Returns the PHP code needed for the given associations
+     *
+     * @param  string  $associations
+     *
+     * @return $this
+     */
+    protected function getAssociationsCode($associationDescription)
+    {
+    	$associations = str_getcsv($associationDescription);
+    	return join("\n", array_map(array($this, 'getAssociationCode'), $associations));
+    }
+
+    /**
+     * Returns the PHP code needed for a single associations
+     *
+     * @param  string  $association		String specifying the association: foreign_key:type:model[:name]
+     *
+     * @return $this
+     */
+    protected function getAssociationCode($association)
+    {
+    	$parts = explode(':', $association);
+    	list($foreignKey, $type, $model) = $parts;
+    	
+    	// Determine the name of the association
+    	if(count($parts) > 3) {
+    		$name = $parts[3];
+    	} else {
+    		$name = $model;
+    	}
+    	
+    	return <<<EOD
+    public function $name()
+    {
+        return \$this->$type('$model', '$foreignKey');
+    }    	
+EOD;
+    }
+    
 }

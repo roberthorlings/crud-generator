@@ -20,5 +20,7 @@ class DummyClass extends Model
      * @var array
      */
     protected $fillable = {{fillable}};
+    
+{{associations}}
 
 }
