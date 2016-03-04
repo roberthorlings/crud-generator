@@ -88,8 +88,8 @@ class CrudCommand extends Command
         // Updating the Http/routes.php file
         $routeFile = app_path('Http/routes.php');
         if (file_exists($routeFile) && (strtolower($this->option('route')) === 'yes')) {
-            $controller = ($controllerNamespace != '') ? $controllerNamespace . '\\' . $name . 'Controller' : $name . 'Controller';
-
+            $controller = $name . 'Controller';
+        	
             if (\App::VERSION() >= '5.2') {
                 $isAdded = File::append($routeFile,
                     "\nRoute::group(['middleware' => ['web']], function () {"
