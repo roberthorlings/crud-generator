@@ -193,6 +193,13 @@ class CrudViewCommand extends Command
                 $this->formFields[$x]['type'] = trim($itemArray[1]);
                 $this->formFields[$x]['required'] = (isset($itemArray[2]) && (trim($itemArray[2]) == 'req' || trim($itemArray[2]) == 'required')) ? true : false;
 
+                // Handle argument 'label'
+                if(count($itemArray)> 3) {
+                	$this->formFields[$x]['label'] = trim($itemArray[3]);
+                } else {
+                	$this->formFields[$x]['label'] = ucwords(str_replace('_', ' ', $this->formFields[$x]['name'] ));
+                }
+                
                 $x++;
             }
         }
@@ -208,8 +215,7 @@ class CrudViewCommand extends Command
             }
 
             $field = $value['name'];
-            $label = ucwords(str_replace('_', ' ', $field));
-            $this->formHeadingHtml .= '<th>' . $label . '</th>';
+            $this->formHeadingHtml .= '<th>' . $value['label'] . '</th>';
 
             if ($i == 0) {
                 $this->formBodyHtml .= '<td><a href="{{ url(\'%%routeGroup%%%%crudName%%\', $item->id) }}">{{ $item->' . $field . ' }}</a></td>';
@@ -359,7 +365,7 @@ class CrudViewCommand extends Command
             </div>\n
 EOD;
 
-        return sprintf($formGroup, $item['name'], ucwords(strtolower(str_replace('_', ' ', $item['name']))), $field);
+        return sprintf($formGroup, $item['name'], $item['label'], $field);
     }
 
     /**
