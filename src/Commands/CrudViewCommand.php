@@ -62,6 +62,7 @@ class CrudViewCommand extends Command
         'datetime' => 'datetime-local',
         'time' => 'time',
         'boolean' => 'radio',
+    	'select' => 'select'
     ];
 
     /**
@@ -189,15 +190,37 @@ class CrudViewCommand extends Command
             $x = 0;
             foreach ($fieldsArray as $item) {
                 $itemArray = explode(':', $item);
-                $this->formFields[$x]['name'] = trim($itemArray[0]);
-                $this->formFields[$x]['type'] = trim($itemArray[1]);
-                $this->formFields[$x]['required'] = (isset($itemArray[2]) && (trim($itemArray[2]) == 'req' || trim($itemArray[2]) == 'required')) ? true : false;
+                $this->formFields[$x] = [
+                		'name' => trim($itemArray[0]),
+                		'type' => trim($itemArray[1]),
+                		'required' => (isset($itemArray[2]) && (trim($itemArray[2]) == 'req' || trim($itemArray[2]) == 'required')) ? true : false
+                ];
 
                 // Handle argument 'label'
-                if(count($itemArray)> 3) {
+                if(count($itemArray) > 3 && trim($itemArray[3]) != "") {
                 	$this->formFields[$x]['label'] = trim($itemArray[3]);
                 } else {
                 	$this->formFields[$x]['label'] = ucwords(str_replace('_', ' ', $this->formFields[$x]['name'] ));
+                }
+                
+                // Handle options for select box                
+                if($this->formFields[$x]['type'] == 'select') {
+                	$this->formFields[$x]['options'] = []; 
+                	if(count($itemArray) > 4) {
+                		$options = str_getcsv($itemArray[4], ';');
+                		foreach($options as $option) {
+                			// If the format is x => y, then use them as key and value
+                			// Otherwise, the key is the value
+                			$parts = explode( '=>', $option );
+                			if( count($parts) > 1 ) {
+                				$key = $parts[0];
+                				$value = $parts[1];
+                			} else {
+                				$key = $value = $parts[0];
+                			}
+                			$this->formFields[$x]['options'][$key] = $value;
+                		}
+                	}
                 }
                 
                 $x++;
@@ -388,6 +411,9 @@ EOD;
             case 'radio':
                 return $this->createRadioField($item);
                 break;
+            case 'select':
+                return $this->createSelectField($item);
+                break;
             default: // text
                 return $this->createFormField($item);
         }
@@ -465,4 +491,22 @@ EOD;
 
         return $this->wrapField($item, sprintf($field, $item['name']));
     }
+    
+    /**
+     * Create a generic input field using the form helper.
+     *
+     * @param  string $item
+     *
+     * @return string
+     */
+    protected function createSelectField($item)
+    {
+    	$required = ($item['required'] === true) ? "'required' => 'required'" : "";
+    
+    	return $this->wrapField(
+    			$item,
+    			"{!! Form::select('" . $item['name'] . "', " . var_export($item['options'], true) . ", null, ['class' => 'form-control', $required]) !!}"
+		);
+    }
+    
 }
